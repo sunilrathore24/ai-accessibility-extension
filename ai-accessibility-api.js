@@ -70,10 +70,16 @@ async function checkAccessibility(html) {
 
      const promptNew = `
      Please analyze the following HTML code and provide accessibility suggestions based on WCAG guidelines:
-
+     go through this url 'https://www.w3.org/TR/WCAG22' to provide suggestions better for the given html code,
+     please provide only necessary suggestions which with fixes which can be directly applied at offset no other suggestions,
      ${html}
 
-     Provide suggestions in the following format:
+     Provide suggestions in the following JSON format so that can copy the response to use it as array of objects without any modification.
+
+     do not provide any header of footer with sugestion like - 'Here are the accessibility suggestions based on WCAG guidelines for the given HTML code:'
+    
+     so the response shoulbe be only in the format [{},{}...]
+
      [
         {
          "message": "Add aria-label or aria-labelledby attributes to the navigation landmarks.",
@@ -94,11 +100,8 @@ async function checkAccessibility(html) {
      ]
    `;
 
-    console.log('prompt value 1 = ' + finalPrompt);
-
+  
     const response = await sendCodyPrompts(promptNew);
-
-    console.log('response from open ai = ', response);
 
     // const suggestions = JSON.parse(response.data.choices[0].text.trim());
     return response;
@@ -124,15 +127,13 @@ const sendCodyPrompts = async (prompt)  => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        temperature: 0,
+        temperature: 0.2,
         topK: -1,
         topP: -1,
-        maxTokensToSample: 1000,
+        maxTokensToSample: 2000,
         messages: [{'speaker': 'human', 'text': prompt}]
       })
     });
-
-    console.log('cody response = ' +  response);
 
     if (response.status !== 200) {
       console.log(`Error: Received status code ${response.status}`);
@@ -140,7 +141,7 @@ const sendCodyPrompts = async (prompt)  => {
     }
 
     const data = await response.text();
-    console.log('data ='+ data);
+    // console.log('data ='+ data);
     const regex = /event: (\w+)\s+data: (\{.*?\})(?=\s*event:|\s*$)/gs;
 
     let match;
@@ -159,6 +160,7 @@ const sendCodyPrompts = async (prompt)  => {
     const secondLastCompletionEvent = completionEvents[completionEvents.length - 2];
 
     if (secondLastCompletionEvent?.data?.completion) {
+      console.log('suggestion = '+ secondLastCompletionEvent?.data?.completion);
       return secondLastCompletionEvent?.data?.completion;
     } else {
       return null;
@@ -172,30 +174,8 @@ const sendCodyPrompts = async (prompt)  => {
   }
 };
 
-function applyCompanyGuidelines(suggestions) {
-  const enhancedSuggestions = suggestions.map((suggestion) => {
-    const guidelineKey = Object.keys(companyGuidelines).find((key) =>
-      suggestion.message.toLowerCase().includes(key)
-    );
-
-    if (guidelineKey) {
-      const guideline = companyGuidelines[guidelineKey];
-      suggestion.message = guideline.message;
-      suggestion.fix = typeof guideline.fix === 'function'
-        ? guideline.fix(suggestion.fix)
-        : guideline.fix;
-    }
-
-    return suggestion;
-  });
-
-  return enhancedSuggestions;
-}
-
 async function provideAccessibilitySuggestions(html) {
-  const suggestions = await checkAccessibility(html);
-  // const enhancedSuggestions = applyCompanyGuidelines(suggestions);
-  return suggestions;
+  return await checkAccessibility(html);
 }
 
 module.exports = {

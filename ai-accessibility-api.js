@@ -2,6 +2,7 @@
 
 const fetch = require('node-fetch');
 const https = require('https');
+const prompt = require('./prompt.js');
  
  const SOURCEGRAPH_API_URL =
   'https://laxtst-insg-001.office.cyberu.com/.api/completions/stream?api-version=1&client-name=web&client-version=0.0.1';
@@ -53,54 +54,49 @@ const SUGGESSIONS = [
   }
 ]
 
-
-// Company-specific accessibility guidelines
-const companyGuidelines = {
-  'aria-label': {
-    message: 'Add an aria-label attribute to provide a label for the element.',
-    fix: (labelText) => `aria-label="${labelText}"`,
-  },
-  'aria-role': {
-    message: 'Add the appropriate ARIA role attribute to the element.',
-    fix: (role) => `role="${role}"`,
-  },
-  'color-contrast': {
-    message: 'Increase the contrast ratio between the text and background colors.',
-    fix: 'Adjust the text or background color to achieve a minimum contrast ratio of 4.5:1.',
-  },
-  // Add more company-specific guidelines as needed
-};
-
 async function checkAccessibility(html) {
   try {
+    console.log('prompt value = '+ prompt);
     console.log('inside checkAccessibility method with cody');
-    const prompt = `
-      Please analyze the following HTML code and provide accessibility suggestions based on WCAG guidelines:
 
+    const finalPrompt = ` 
+   Please analyze the following HTML code and provide accessibility fixes based on WCAG guidelines, focus on tags such as missing role, aria-lable and all other general accessibility and screen reader improvements:
+    
       ${html}
+      
+     provide the following details in the specified format as shown below:
+     
+     ${prompt}`;
 
-      Provide suggestions in the following format:
-      [
-         {
-          "message": "Add aria-label or aria-labelledby attributes to the navigation landmarks.",
-          "fix": "Include aria-label=\"Main Navigation\" or aria-labelledby=\"nav-heading\" to provide accessible names for the navigation landmarks.",
-          "startPoint": 10,
-          "endPoint": 14,
-          "edits": [
-            {
-              "range": {
-                "start": 10,
-                "end": 15
-              },
-              "newText": "<nav aria-label=\"Main Navigation\">"
-            }
-          ]
-        }
-        ...
-      ]
-    `;
+     const promptNew = `
+     Please analyze the following HTML code and provide accessibility suggestions based on WCAG guidelines:
 
-    const response = await sendCodyPrompts(prompt);
+     ${html}
+
+     Provide suggestions in the following format:
+     [
+        {
+         "message": "Add aria-label or aria-labelledby attributes to the navigation landmarks.",
+         "fix": "Include aria-label=\"Main Navigation\" or aria-labelledby=\"nav-heading\" to provide accessible names for the navigation landmarks.",
+         "startPoint": 10,
+         "endPoint": 14,
+         "edits": [
+           {
+             "range": {
+               "start": 10,
+               "end": 15
+             },
+             "newText": "<nav aria-label=\"Main Navigation\">"
+           }
+         ]
+       }
+       ...
+     ]
+   `;
+
+    console.log('prompt value 1 = ' + finalPrompt);
+
+    const response = await sendCodyPrompts(promptNew);
 
     console.log('response from open ai = ', response);
 
@@ -115,6 +111,8 @@ async function checkAccessibility(html) {
 const sendCodyPrompts = async (prompt)  => {
   try {
     console.log('inside send cody prompts method');
+    console.log('prompt value 1 = ' + prompt);
+
     const agent = new https.Agent({
       rejectUnauthorized: false,
     });

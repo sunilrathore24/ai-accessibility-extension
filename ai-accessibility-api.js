@@ -72,28 +72,22 @@ async function checkAccessibility(html) {
      ${prompt}`;
 
      const promptNew = `
-
      Please analyze the following HTML code and provide accessibility suggestions based on WCAG guidelines:
      
-     go through this url 'https://www.w3.org/TR/WCAG22' to provide suggestions better for the given html code, also consider this url
-    
-     'https://github.com/angular-eslint/angular-eslint/tree/main/packages/eslint-plugin-template/docs/rules' to provide suggestions based on angular-eslint rule.
-    
-     please provide only necessary suggestions which with fixes which can be directly applied at offset no other suggestions
+     Go through this URL 'https://www.w3.org/TR/WCAG22' to provide better suggestions for the given HTML code. Also, consider this URL 'https://github.com/angular-eslint/angular-eslint/tree/main/packages/eslint-plugin-template/docs/rules' to provide suggestions based on the Angular ESLint rules.
      
-     also do not give any false suggestion and throughly check the html before giving any suggestion.
-
-     you should be able to understand the entire html code and do not give suggestion on attribute values.
+     Please provide only necessary suggestions with fixes that can be directly applied at the specified offsets. Do not provide any other suggestions.
+     
+     Thoroughly check the HTML code before giving any suggestions to avoid false positives. Ensure that you understand the entire HTML code and do not provide suggestions on attribute values.
+     
      ${html}
-
-     Provide suggestions in the following JSON format so that can copy the response to use it as array of objects without any modification.
-
-     do not provide any header of footer with sugestion like - 'Here are the accessibility suggestions based on WCAG guidelines for the given HTML code:'
-    
-     so the response shoulbe be only in the format [{},{}...], also put close attention on in counting offset and length of the text in the response.
-
+     
+     Provide suggestions in the following JSON format so that the response can be used as an array of objects without any modification. Do not include any header or footer with the suggestions.
+     
+     Pay close attention to counting offsets and the length of the text in the response. also do not provide any false positive if you are not sure.
+     
      [
-        {
+       {
          "message": "Add aria-label or aria-labelledby attributes to the navigation landmarks.",
          "fix": "Include aria-label=\"Main Navigation\" or aria-labelledby=\"nav-heading\" to provide accessible names for the navigation landmarks.",
          "startPoint": 10,
@@ -102,7 +96,7 @@ async function checkAccessibility(html) {
            {
              "range": {
                "start": 10,
-               "end": 15
+               "end": 14
              },
              "newText": "<nav aria-label=\"Main Navigation\">"
            }
@@ -110,7 +104,8 @@ async function checkAccessibility(html) {
        }
        ...
      ]
-   `;
+     `;
+     
 
   
     const response = await sendCodyPrompts(promptNew);

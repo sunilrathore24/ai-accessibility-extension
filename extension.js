@@ -1,6 +1,7 @@
 const vscode = require("vscode");
 const { provideAccessibilitySuggestions } = require("./ai-accessibility-api.js");
 const processedDocuments = new Set();
+let animationInterval;
 
 function activate(context) {
   console.log('inside extension activate method');
@@ -16,6 +17,8 @@ function activate(context) {
     const text = document.getText();
 
     try {
+      startLoadingAnimation();
+
       const suggestions =await provideAccessibilitySuggestions(text);
 
       const diagnostics = suggestions.map((suggestion) => {
@@ -42,8 +45,27 @@ function activate(context) {
       vscode.window.showErrorMessage(
         "Error occurred while checking accessibility. error - " + error 
       );
-    }
+    } finally {
+      stopLoadingAnimation();
   }
+  }
+
+  
+function startLoadingAnimation() {
+  let dots = '';
+  let count = 0;
+
+  animationInterval = setInterval(() => {
+    dots = '.'.repeat(count % 4);
+    vscode.window.setStatusBarMessage(`AI extension is working${dots}`);
+    count++;
+  }, 500);
+}
+
+function stopLoadingAnimation() {
+  clearInterval(animationInterval);
+  vscode.window.setStatusBarMessage('');
+}
 
   async function applyFix(suggestion) {
     const editor = vscode.window.activeTextEditor;

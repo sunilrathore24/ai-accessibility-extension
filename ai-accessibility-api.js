@@ -69,16 +69,25 @@ async function checkAccessibility(html) {
      ${prompt}`;
 
      const promptNew = `
+
      Please analyze the following HTML code and provide accessibility suggestions based on WCAG guidelines:
-     go through this url 'https://www.w3.org/TR/WCAG22' to provide suggestions better for the given html code,
-     please provide only necessary suggestions which with fixes which can be directly applied at offset no other suggestions,
+     
+     go through this url 'https://www.w3.org/TR/WCAG22' to provide suggestions better for the given html code, also consider this url
+    
+     'https://github.com/angular-eslint/angular-eslint/tree/main/packages/eslint-plugin-template/docs/rules' to provide suggestions based on angular-eslint rule.
+    
+     please provide only necessary suggestions which with fixes which can be directly applied at offset no other suggestions
+     
+     also do not give any false suggestion and throughly check the html before giving any suggestion.
+
+     you should be able to understand the entire html code and do not give suggestion on attribute values.
      ${html}
 
      Provide suggestions in the following JSON format so that can copy the response to use it as array of objects without any modification.
 
      do not provide any header of footer with sugestion like - 'Here are the accessibility suggestions based on WCAG guidelines for the given HTML code:'
     
-     so the response shoulbe be only in the format [{},{}...]
+     so the response shoulbe be only in the format [{},{}...], also put close attention on in counting offset and length of the text in the response.
 
      [
         {
@@ -161,7 +170,7 @@ const sendCodyPrompts = async (prompt)  => {
 
     if (secondLastCompletionEvent?.data?.completion) {
       console.log('suggestion = '+ secondLastCompletionEvent?.data?.completion);
-      return secondLastCompletionEvent?.data?.completion;
+      return JSON.parse(secondLastCompletionEvent?.data?.completion);
     } else {
       return null;
     }

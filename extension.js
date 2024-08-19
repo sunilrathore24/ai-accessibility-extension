@@ -1,5 +1,6 @@
 const vscode = require("vscode");
 const { provideAccessibilitySuggestions } = require("./ai-accessibility-api.js");
+const processedDocuments = new Set();
 
 function activate(context) {
   console.log('inside extension activate method');
@@ -8,14 +9,14 @@ function activate(context) {
 
   async function checkAccessibility(document) {
     console.log('inside extension check accessibility method');
-    if (document.languageId !== "html") {
+    if (document.languageId !== "html" || processedDocuments.has(document.uri.toString())) {
       return;
     }
 
     const text = document.getText();
 
     try {
-      const suggestions = await provideAccessibilitySuggestions(text);
+      const suggestions =await provideAccessibilitySuggestions(text);
 
       const diagnostics = suggestions.map((suggestion) => {
         const range = new vscode.Range(
@@ -36,6 +37,7 @@ function activate(context) {
       });
 
       diagnosticCollection.set(document.uri, diagnostics);
+      processedDocuments.add(document.uri.toString());
     } catch (error) {
       vscode.window.showErrorMessage(
         "Error occurred while checking accessibility. error - " + error 
@@ -48,9 +50,9 @@ function activate(context) {
     if (!editor) {
       return;
     }
-
+  
     const workspaceEdit = new vscode.WorkspaceEdit();
-
+  
     suggestion.edits.forEach((edit) => {
       const range = new vscode.Range(
         editor.document.positionAt(edit.range.start),
@@ -58,9 +60,15 @@ function activate(context) {
       );
       workspaceEdit.replace(editor.document.uri, range, edit.newText);
     });
-
+  
     await vscode.workspace.applyEdit(workspaceEdit);
+    const diagnostics = diagnosticCollection.get(editor.document.uri);
+    const updatedDiagnostics = diagnostics.filter(
+      (d) => !d.range.contains(editor.selection.start)
+    );
+    diagnosticCollection.set(editor.document.uri, updatedDiagnostics);
   }
+  
 
   context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider("html", {
@@ -95,9 +103,13 @@ function activate(context) {
     checkAccessibility(document);
   });
 
-  vscode.workspace.onDidChangeTextDocument((event) => {
-    checkAccessibility(event.document);
+  vscode.workspace.onDidCloseTextDocument((document) => {
+    processedDocuments.delete(document.uri.toString());
   });
+
+  // vscode.workspace.onDidChangeTextDocument((event) => {
+  //   checkAccessibility(event.document);
+  // });
 }
 
 function deactivate() {}

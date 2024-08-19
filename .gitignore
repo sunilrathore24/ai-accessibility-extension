@@ -1,0 +1,10 @@
+# .gitignore
+
+# Ignore the node_modules folder
+node_modules/
+
+# Ignore other files or folders if needed
+# For example:
+# dist/
+# logs/
+# *.log

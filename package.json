@@ -1,0 +1,35 @@
+{
+  "name": "csod-ai-accessibility-extension",
+  "displayName": "AI Accessibility Extension",
+  "description": "An AI-powered accessibility extension for VS Code",
+  "version": "1.0.0",
+  "publisher": "CodeAccessibility Guardians",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:html"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.checkAccessibility",
+        "title": "Check Accessibility"
+      }
+    ]
+  },
+  "icon": "accessibility.png",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "axios-rate-limit": "^1.4.0",
+    "node-fetch": "^2.6.7",
+    "openai": "^4.55.9"
+  },
+  "devDependencies": {
+    "vscode": "^1.1.37"
+  }
+}

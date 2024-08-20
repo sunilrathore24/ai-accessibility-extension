@@ -1,2 +1,2 @@
-# ai-accessibility-extension
-ai accessibility extension
+# A11yAssist
+A11yAssist is a powerful Visual Studio Code extension designed to help developers create more accessible web content. Accessibility is not just a feature—it's a fundamental right. A11yAssist aims to make it easier for developers to build inclusive websites by providing real-time accessibility suggestions and fixes directly within your HTML files.

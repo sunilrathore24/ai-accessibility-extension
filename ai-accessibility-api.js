@@ -12,6 +12,10 @@ const Promptmessage = [
             - Reference the WCAG 2.2 guidelines (https://www.w3.org/TR/WCAG22) and Angular ESLint rules (https://github.com/angular-eslint/angular-eslint/tree/main/packages/eslint-plugin-template/docs/rules) to provide informed suggestions.
             - Thoroughly check the HTML code to avoid false positives and ensure understanding of the entire code before providing suggestions.
             - Do not provide suggestions on attribute values.
+            - A clear and concise message describing the accessibility issue.
+            - A fix or recommendation to address the identified issue.
+            - A CSS selector that uniquely identifies the affected element(s) in the HTML code.
+            - The proposed code changes or edits to fix the accessibility issue.
 
             In your responses, obey the following rules:
             - Be as brief and concise as possible without losing clarity.
@@ -20,27 +24,63 @@ const Promptmessage = [
             - Pay close attention to counting offsets and the length of the text in the response.
             - If the provided HTML code is incomplete or lacks necessary context, request additional information before providing suggestions.
 
-            Here's an example of the JSON format for your suggestions:
 
-            \`\`\`json
-            [
+            Please format the suggestions as a JSON array, where each suggestion is an object with the following properties:
+          
+          - "message": a string describing the accessibility issue
+          - "fix": a string providing the recommendation to address the issue
+          - "selector": a string containing the CSS selector to identify the affected element(s) or their parent/container
+          - "edits": an array of objects, where each object represents a proposed code change and has the following properties, ensure that edit always have these 2 properties:
+            - "selector": a string containing the CSS selector to identify the specific element to be modified (optional, if different from the main selector)
+            - "newText": a string containing the updated code snippet to fix the accessibility issue
+            - "oldText": a string containing the original code snippet that needs to be replaced
+
+          If multiple related elements need to be modified, include them as separate objects in the "edits" array, specifying the appropriate selector and newText for each element.
+
+          Example JSON array format:
+          [
+          {
+            "message": "Add alternative text to the image.",
+            "fix": "Provide a descriptive alt attribute for the image.",
+            "selector": ".hero-image",
+            "line": 15,
+            "column": 5,
+            "edits": [
               {
-                "message": "Add aria-label or aria-labelledby attributes to the navigation landmarks.",
-                "fix": "Include aria-label=\\"Main Navigation\\" or aria-labelledby=\\"nav-heading\\" to provide accessible names for the navigation landmarks.",
-                "startPoint": 10,
-                "endPoint": 14,
-                "edits": [
-                  {
-                    "range": {
-                      "start": 10,
-                      "end": 14
-                    },
-                    "newText": "<nav aria-label=\\"Main Navigation\\">"
-                  }
-                ]
+                "selector": ".hero-image",
+                "newText": "<img src=\"hero.jpg\" alt=\"Company hero image\" class=\"hero-image\">"
+                "oldtext": "<img src=\"hero.jpg\" class=\"hero-image\">"
+                }
+            ]
+          },
+          {
+            "message": "Improve form accessibility.",
+            "fix": "Associate labels with their respective input fields using the for attribute.",
+            "selector": "form",
+            "edits": [
+              {
+                "selector": "label:nth-of-type(1)",
+                "newText": "<label for=\"name\">Name:</label>"
+                "oldtext": "<label>Name:</label>"
+              },
+              {
+                "selector": "input[type=\"text\"]",
+                "newText": "<input type=\"text\" id=\"name\" name=\"name\">"
+                "oldtext": "<input type=\"text\" name=\"name\">"
+              },
+              {
+                "selector": "label:nth-of-type(2)",
+                "newText": "<label for=\"email\">Email:</label>"
+                "oldtext": "<label>Email:</label>"
+              },
+              {
+                "selector": "input[type=\"email\"]",
+                "newText": "<input type=\"email\" id=\"email\" name=\"email\">"
+                "oldtext": "<input type=\"email\" name=\"email\">"
               }
             ]
-            \`\`\`
+          }
+          ]
             Remember to provide suggession in exactly same JSON format as shown above and there should not be a single entry with distorted format in the response, play close attenrtion to offset values and the length of the text in the response as this value will be used to apply fixes.
             Remember to stay focused on providing accurate and helpful accessibility suggestions based on the given HTML code and guidelines.`,
   },
@@ -58,54 +98,6 @@ const Promptmessage = [
 
 const SOURCEGRAPH_API_URL =
   "https://laxtst-insg-001.office.cyberu.com/.api/completions/stream?api-version=1&client-name=web&client-version=0.0.1";
-
-const SUGGESSIONS = [
-  {
-    message: "Provide a more descriptive text for the navigation links.",
-    fix: "Replace generic text like 'Home', 'About', 'Contact' with more meaningful descriptions.",
-    startPoint: 31,
-    endPoint: 136,
-    edits: [
-      {
-        range: {
-          start: 76,
-          end: 80,
-        },
-        newText: "Home Page",
-      },
-      {
-        range: {
-          start: 112,
-          end: 117,
-        },
-        newText: "About Us",
-      },
-      {
-        range: {
-          start: 149,
-          end: 156,
-        },
-        newText: "Contact Information",
-      },
-    ],
-  },
-  {
-    message:
-      "Add aria-label or aria-labelledby attributes to the navigation landmarks.",
-    fix: 'Include aria-label="Main Navigation" or aria-labelledby="nav-heading" to provide accessible names for the navigation landmarks.',
-    startPoint: 10,
-    endPoint: 14,
-    edits: [
-      {
-        range: {
-          start: 10,
-          end: 15,
-        },
-        newText: '<nav aria-label="Main Navigation">',
-      },
-    ],
-  },
-];
 
 async function checkAccessibility(html) {
   try {
@@ -139,7 +131,7 @@ async function checkAccessibility(html) {
      Pay close attention to counting offsets and the length of the text in the response. also do not provide any false positive if you are not sure.
      `;
 
-    const response = await sendCodyPrompts('please go through this html file and provide sugestions  '+ html);
+    const response = await sendCodyPrompts('please go through this html file and provide sugestions, make sure that the json will always be valid and complete'+ html);
 
     // const suggestions = JSON.parse(response.data.choices[0].text.trim());
     return response;

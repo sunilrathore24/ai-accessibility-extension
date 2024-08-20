@@ -81,7 +81,8 @@ const Promptmessage = [
             ]
           }
           ]
-            Remember to provide suggession in exactly same JSON format as shown above and there should not be a single entry with distorted format in the response, play close attenrtion to offset values and the length of the text in the response as this value will be used to apply fixes.
+            Remember to provide suggession in exactly same JSON format as shown above and there should not be a single entry with distorted format in the response.
+            The JSON soould not have any unterminated commas, brackets, or quotes in the response and it should be always valid JSON.
             Remember to stay focused on providing accurate and helpful accessibility suggestions based on the given HTML code and guidelines.`,
   },
   {
@@ -105,33 +106,14 @@ async function checkAccessibility(html) {
     console.log("inside checkAccessibility method with cody");
 
     const finalPrompt = ` 
-   Please analyze the following HTML code and provide accessibility fixes based on WCAG guidelines, focus on tags such as missing role, aria-lable and all other general accessibility and screen reader improvements:
+    please go through this html file and provide sugestions, 
+    make sure that the json will always be valid and complete,
+    remember that do not add any other text in response apart from json like 'here are suggestions' or 'here is the json'
+    file since it will be used directly in code. 
     
-      ${html}
-      
-     provide the following details in the specified format as shown below:
-     
-     ${prompt}`;
+     ${html}`;
 
-    const promptNew = `
-     Please analyze the following HTML code and provide accessibility suggestions based on WCAG guidelines:
-     
-     Go through this URL 'https://www.w3.org/TR/WCAG22' to provide better suggestions for the given HTML code. Also, consider this URL 'https://github.com/angular-eslint/angular-eslint/tree/main/packages/eslint-plugin-template/docs/rules' to provide suggestions based on the Angular ESLint rules.
-     
-     Please provide only necessary suggestions with fixes that can be directly applied at the specified offsets. Do not provide any other suggestions.
-     
-     Thoroughly check the HTML code before giving any suggestions to avoid false positives. Ensure that you understand the entire HTML code and do not provide suggestions on attribute values.
-    
-     fixes should have meaning full solution for the given issue that can be directly applied at the specified offsets. Do not provide any other suggestions.
-     
-     ${html}
-     
-     Provide suggestions in the JSON format  as shown above so that the response can be used as an array of objects without any modification. Do not include any header or footer with the suggestions.
-     
-     Pay close attention to counting offsets and the length of the text in the response. also do not provide any false positive if you are not sure.
-     `;
-
-    const response = await sendCodyPrompts('please go through this html file and provide sugestions, make sure that the json will always be valid and complete'+ html);
+    const response = await sendCodyPrompts(finalPrompt);
 
     // const suggestions = JSON.parse(response.data.choices[0].text.trim());
     return response;

@@ -40,53 +40,64 @@ function activate(context) {
         },
         false
       );
-      const cheerioHtml = $.html();
+      // const cheerioHtml = $.html();
 
-      // Update the document with the processed HTML, to avoide cheerio mismatch
-      const edit = new vscode.WorkspaceEdit();
-      edit.replace(
-        document.uri,
-        new vscode.Range(
-          document.positionAt(0),
-          document.positionAt(text.length)
-        ),
-        cheerioHtml
-      );
-      await vscode.workspace.applyEdit(edit);
+      // // Update the document with the processed HTML, to avoide cheerio mismatch
+      // const edit = new vscode.WorkspaceEdit();
+      // edit.replace(
+      //   document.uri,
+      //   new vscode.Range(
+      //     document.positionAt(0),
+      //     document.positionAt(text.length)
+      //   ),
+      //   cheerioHtml
+      // );
+      // await vscode.workspace.applyEdit(edit);
 
       const diagnostics = suggestions
-        .map((suggestion) => {
+        .flatMap((suggestion) => {
           const element = $(suggestion.selector);
-          if (element.length > 0) {
-            let elementText;
-            if (element.children.length > 1) {
-              elementText = element.parent.toString();
-            } else {
-              elementText = element.toString();
-            }
 
-            const startOffset = document.getText().indexOf(elementText);
-            const endOffset = startOffset + elementText.length;
-            const startPosition = document.positionAt(startOffset);
-            const endPosition = document.positionAt(endOffset);
-            const range = new vscode.Range(startPosition, endPosition);
-            const diagnostic = new vscode.Diagnostic(
-              range,
-              suggestion.message,
-              vscode.DiagnosticSeverity.Warning
-            );
-            diagnostic.source = "Suggessions by A11yAssist ";
-            diagnostic.code = {
-              value: suggestion.fix,
-              target: vscode.Uri.parse(
-                `command:accessibility.applyFix?${encodeURIComponent(
-                  JSON.stringify(suggestion)
-                )}`
-              ),
-            };
-            return diagnostic;
-          }
-          return null;
+          // Create a diagnostic for each edit in the suggestion
+          return suggestion.edits.map((edit) => {
+            if (element.length > 0) {
+              elementText = element.toString();
+
+              const oldText = edit.oldText;
+              let startOffset = document.getText().indexOf(oldText);
+              let endOffset = startOffset + oldText.length;
+
+              // If oldText is not found, fallback to using elementText
+              if (startOffset < 0) {
+                startOffset = document.getText().indexOf(elementText);
+                endOffset = startOffset + elementText.length;
+              }
+
+              if (startOffset !== -1) {
+                const startPosition = document.positionAt(startOffset);
+                const endPosition = document.positionAt(endOffset);
+                const range = new vscode.Range(startPosition, endPosition);
+                const diagnostic = new vscode.Diagnostic(
+                  range,
+                  suggestion.message,
+                  vscode.DiagnosticSeverity.Warning
+                );
+                diagnostic.source = "Suggestions by A11yAssist";
+                diagnostic.code = {
+                  value: suggestion.fix,
+                  target: vscode.Uri.parse(
+                    `command:accessibility.applyFix?${encodeURIComponent(
+                      JSON.stringify(suggestion)
+                    )}`
+                  ),
+                };
+                return diagnostic;
+              }
+              return null;
+            }
+          });
+
+          return [];
         })
         .filter((diagnostic) => diagnostic !== null);
 
@@ -107,7 +118,7 @@ function activate(context) {
 
     animationInterval = setInterval(() => {
       dots = ".".repeat(count % 4);
-      vscode.window.setStatusBarMessage(`AI extension is working${dots}`);
+      vscode.window.setStatusBarMessage(`A11yAssist is worknig${dots}`);
       count++;
     }, 500);
   }
@@ -137,16 +148,16 @@ function activate(context) {
 
         suggestion.edits.forEach((edit) => {
           const element = $(edit.selector);
-        
+
           if (element.length > 0) {
-          let startOffset = document.getText().indexOf(edit.oldText);
-          let endOffset = startOffset + edit.oldText.length;
-          let elementText = element.toString();
+            let startOffset = document.getText().indexOf(edit.oldText);
+            let endOffset = startOffset + edit.oldText.length;
+            let elementText = element.toString();
             if (startOffset < 0) {
-               startOffset = document.getText().indexOf(elementText);
-               endOffset = startOffset + elementText.length;
+              startOffset = document.getText().indexOf(elementText);
+              endOffset = startOffset + elementText.length;
             }
-            
+
             if (startOffset !== -1) {
               const startPosition = document.positionAt(startOffset);
               const endPosition = document.positionAt(endOffset);

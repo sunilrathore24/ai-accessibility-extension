@@ -5,94 +5,163 @@ const { provideAccessibilitySuggestions } = require('./ai-accessibility-api');
 
 // Sample HTML content for testing
 const sampleHTML = `
-<body>
-  <header>
-    <h1>Welcome to My Website</h1>
-    <nav>
-      <ul id="nav1">
-        <li id="item1"><a href="#">Home</a></li>
-        <li id="item2"><a href="#">About</a></li>
-        <li id="item3"><a href="#">Contact</a></li>
-      </ul>
-    </nav>
+@if (showToolbar) {
+  <header class="trq-d-flex trq-py-2 trq-align-items-center trq-justify-content-center">
+    @if (heading) {
+      <div
+        class="trq-flex-grow-1 trq-mt-0 trq-text-ellipsis trq-text-lg"
+        [attr.title]="heading"
+        trqId
+        trqIdSuffix="heading"
+        [trqIdUseParent]="true"
+        (assignId)="headerId = $event"
+        >{{heading}}</div
+      >
+    }
+    @if (!heading) {
+      <ng-content select="[trq-carousel__heading]"></ng-content>
+    }
+    @if (!isSmallScreen) {
+      <ng-container
+        *ngTemplateOutlet="showNumberPaginationNoSkipping ? numberPaginationNoSkippingTemplate : navigationTemplate"></ng-container>
+    }
+    <ng-content select="[trq-carousel__actions]"></ng-content>
   </header>
+}
 
-  <main>
-    <section>
-      <h2>About Us</h2>
-      <p>We are a company dedicated to providing high-quality products and services.</p>
-      <img src="company-image.jpg" alt="Description of the company image"/>
-    </section>
+<div
+  class="trq-carousel__wrapper trq-position-relative"
+  [class.trq-carousel__wrapper--hover-only-buttons]="hoverOnlyButtons">
+  @if (showButtons || hoverOnlyButtons) {
+    <button
+      type="button"
+      class="trq-pl-1 trq-pr-2 swiper-button-prev trq-d-inline-flex trq-justify-content-center trq-overflow-hidden"
+      [ngClass]="{'swiper-button-rtl': isRTL, 'swiper-button-disabled': disablePrevious}"
+      [disabled]="disablePrevious"
+      [attr.aria-label]="navPrevLabel"
+      [attr.aria-describedby]="ariaDescribedBy || headerId || null"
+      (click)="previousSlide()">
+      <trq-icon
+        [size]="48"
+        class="trq-mx-0 trq-aria-disabled"
+        aria-hidden="true"
+        [name]="isRTL? iconShape.KEYBOARD_ARROW_RIGHT : iconShape.KEYBOARD_ARROW_LEFT"
+        [disabled]="disablePrevious">
+      </trq-icon>
+    </button>
+  }
 
-    <section>
-      <h2>Our Products</h2>
-      <ul id="list2">
-        <li id="listitem1">Product 1</li>
-        <li id="listitem2">Product 2</li>
-        <li id="listitem3">Product 3</li>
-      </ul>
-    </section>
+  <!-- INFO: (observerUpdate)=""- This is called only when config has {observer: true} -->
+  <swiper-container
+    #swiperContainer
+    class="trq-carousel"
+    [ngClass]="{
+      'trq-carousel--overflow' : wrapperOverflow,
+      'trq-carousel--transition': slidesInTransition
+    }"
+    init="false"
+    [eventsPrefix]="''"
+    [hidden]="hidden"
+    (init)="onSwiperInit();"
+    (activeindexchange)="onIndexChanged()"
+    (slidechange)="slideChange.emit(current)"
+    (observerUpdate)="onIndexChanged()"
+    (reachbeginning)="onIndexChanged();"
+    (reachend)="sliderReachEnd.emit();onIndexChanged()"
+    (fromedge)="sliderFromEdge.emit()"
+    (slideprevtransitionend)="slidePrevTransitionEnd.emit()"
+    (slideprevtransitionstart)="slidePrevTransitionStart.emit()"
+    (slidenexttransitionend)="slideNextTransitionEnd.emit()"
+    (slidenexttransitionstart)="slideNextTransitionStart.emit()"
+    (slidechangetransitionend)="slidesInTransition=false; onSlideChangeTransitionEnd()"
+    (slidechangetransitionstart)="onSlideChangeTransitionStart()">
+    @for (slide of slides; track slide) {
+      <swiper-slide>
+        <ng-container [ngTemplateOutlet]="slide.itemTemplate"></ng-container>
+      </swiper-slide>
+    }
+  </swiper-container>
+  @if (showButtons || hoverOnlyButtons) {
+    <button
+      type="button"
+      class="trq-pr-1 trq-pl-2 swiper-button-next trq-d-inline-flex trq-justify-content-center trq-overflow-hidden"
+      [ngClass]="{'swiper-button-rtl': isRTL, 'swiper-button-disabled': disableNext}"
+      [disabled]="disableNext"
+      [attr.aria-label]="navNextLabel"
+      [attr.aria-describedby]="ariaDescribedBy || headerId || null"
+      (click)="nextSlide()">
+      <trq-icon
+        [size]="48"
+        class="trq-mx-0 trq-aria-disabled"
+        aria-hidden="true"
+        [name]="isRTL? iconShape.KEYBOARD_ARROW_LEFT : iconShape.KEYBOARD_ARROW_RIGHT"
+        [disabled]="disableNext"></trq-icon>
+    </button>
+  }
+</div>
 
-    <section>
-      <h2>Contact Us</h2>
-      <form>
-        <label for="message">Message:</label> for="email">Email: for="name">Name:>Name:
-        <input type="text" id="name" name="name"/>/><br/>
+@if (isSmallScreen) {
+  <div class="trq-mt-1 trq-d-flex trq-align-items-center">
+    <ng-container
+      *ngTemplateOutlet="showNumberPaginationNoSkipping ? numberPaginationNoSkippingTemplate : null "></ng-container>
+    <ng-container *ngTemplateOutlet="showToolbar ? navigationTemplate : null "></ng-container>
+  </div>
+}
 
-        <label>Email:</label>
-        <input type="email" id="email" name="email"/>/><br/>
+<ng-template #numberPaginationNoSkippingTemplate>
+  <div trqCarouselAction class="trq-mr-2 carousel-custom-pagination__text">
+    <span [trqTranslate]="paginationI18nResource" [trqTranslateParams]="paginationI18nParams"></span> (<a
+      href=""
+      class="trq-text-primary trq-carousel__link"
+      (click)="startOver($event)"
+      [trqTranslate]="paginationStartOverI18nResource"></a
+    >)
+  </div>
+</ng-template>
 
-        <label>Message:</label>
-        <textarea id="message" name="message"/>/><br/>
+<ng-template #navigationTemplate>
+  <button
+    class="trq-pl-1 trq-pr-2 trq-text-capitalize swiper-button-prev trq-carousel-btn--prev"
+    [trqButton]="buttonType.FLAT"
+    [disabled]="disablePrevious"
+    [attr.aria-label]="navPrevLabel"
+    [attr.aria-describedby]="ariaDescribedBy || headerId || null"
+    (click)="previousSlide()">
+    <trq-icon
+      class="trq-mx-0 trq-aria-disabled"
+      aria-hidden="true"
+      [name]="isRTL? iconShape.KEYBOARD_ARROW_RIGHT : iconShape.KEYBOARD_ARROW_LEFT"
+      [disabled]="disablePrevious">
+    </trq-icon>
+    {{navPrevLabel}}
+  </button>
 
-        <input type="submit" value="Submit"/>
-      </form>
-      <div role="listbox" id="listbox3">
-        <div id="listbox1-1" class="selected" aria-selected="true"> Green </div>
-        <div id="listbox1-2">Orange</div>
-        <div id="listbox1-3">Red</div>
-        <div id="listbox1-4">Blue</div>
-        <div id="listbox1-5">Violet</div>
-        <div id="listbox1-6">Periwinkle</div>
-      </div>
-      <div role="combobox" id="combobox2">
-        <input type="text" aria-autocomplete="list" aria-controls="options" aria-expanded="false"/>
-        <ul id="options" role="listbox">
-          <li id="combobox-1">Option 1</li>
-          <li id="combobox-2">Option 2</li>
-          <li id="combobox-3">Option 3</li>
-        </ul>
-      </div>
-      <div role="tree" id="tree1">
-        <div id="treeitem-1">Green</div>
-        <div id="treeitem-2">Orange</div>
-        <div id="treeitem-3">Red</div>
-        <div id="treeitem-4">Blue</div>
-        <div id="treeitem-5">Violet</div>
-        <div id="treeitem-6">Periwinkle</div>
-      </div>
-      <ul role="menu" id="menu1">
-        <li id="menuitem-1">File</li>
-        <li id="menuitem-2">Edit</li>
-        <li id="menuitem-3">View</li>
-      </ul>
-      <div role="tablist">
-        <button aria-selected="true" aria-controls="panel1">Tab 1</button>
-        <button aria-selected="false" aria-controls="panel2">Tab 2</button>
-      </div>
-      <div id="panel1"> Content for Tab 1 </div>
-      <div id="panel2"> Content for Tab 2 </div>
-      <div aria-live="polite"><p>Status: Loading...</p></div>
-      <nav aria-label="Secondary Navigation">
-        <ul id="secondary-nav">
-          <li id="secondary-nav1"><a href="/" aria-current="date">Home</a></li>
-          <li id="secondary-nav2"><a href="/about">About</a></li>
-          <li id="secondary-nav3"><a href="/contact">Contact</a></li>
-        </ul>
-      </nav>
-    </section>
-  </main>
-</body>
+  @if (showNumberPagination) {
+    <span
+      class="trq-text-ellipsis trq-hidden-md-down trq-carousel-ml carousel-custom-pagination__text"
+      [trqTranslate]="paginationI18nResource"
+      [trqTranslateParams]="paginationI18nParams">
+    </span>
+  }
+
+  <button
+    trqCarouselAction
+    class="trq-pr-1 trq-pl-2 trq-text-capitalize trq-carousel-ml swiper-button-next trq-carousel-btn--next"
+    [trqButton]="buttonType.FLAT"
+    [disabled]="disableNext"
+    [attr.aria-label]="navNextLabel"
+    [attr.aria-describedby]="ariaDescribedBy || headerId || null"
+    (click)="nextSlide()">
+    {{navNextLabel}}
+    <trq-icon
+      class="trq-mx-0 trq-aria-disabled"
+      aria-hidden="true"
+      [name]="isRTL? iconShape.KEYBOARD_ARROW_LEFT : iconShape.KEYBOARD_ARROW_RIGHT"
+      [disabled]="disableNext">
+    </trq-icon>
+  </button>
+</ng-template>
+
 
 
 `;

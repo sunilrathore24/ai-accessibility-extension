@@ -100,7 +100,7 @@ const Promptmessage = [
 const SOURCEGRAPH_API_URL =
   "https://laxtst-insg-001.office.cyberu.com/.api/completions/stream?api-version=1&client-name=web&client-version=0.0.1";
 
-async function checkAccessibility(html) {
+async function checkAccessibility(html, signal) {
   try {
     console.log("prompt value = " + prompt);
     console.log("inside checkAccessibility method with cody");
@@ -113,7 +113,7 @@ async function checkAccessibility(html) {
     
      ${html}`;
 
-    const response = await sendCodyPrompts(finalPrompt);
+    const response = await sendCodyPrompts(finalPrompt, signal);
 
     // const suggestions = JSON.parse(response.data.choices[0].text.trim());
     return response;
@@ -123,7 +123,7 @@ async function checkAccessibility(html) {
   }
 }
 
-const sendCodyPrompts = async (prompt) => {
+const sendCodyPrompts = async (prompt, signal) => {
   try {
     const agent = new https.Agent({
       rejectUnauthorized: false,
@@ -145,6 +145,7 @@ const sendCodyPrompts = async (prompt) => {
         maxTokensToSample: 2000,
         messages: messages,
       }),
+      signal
     });
 
     if (response.status !== 200) {
@@ -182,17 +183,20 @@ const sendCodyPrompts = async (prompt) => {
     } else {
       return null;
     }
-  } catch (err) {
-    console.log("inside catch block");
-    console.log("cach error = " + err);
-    error(`Error sending prompt to Cody:`, err);
-
+  }  catch (err) {
+    if (err.name === "AbortError") {
+      console.log("Request aborted");
+    } else {
+      console.log("inside catch block");
+      console.log("catch error = " + err);
+      error(`Error sending prompt to Cody:`, err);
+    }
     return null;
   }
 };
 
-async function provideAccessibilitySuggestions(html) {
-  return await checkAccessibility(html);
+async function provideAccessibilitySuggestions(html, signal) {
+  return await checkAccessibility(html, signal);
 }
 
 module.exports = {

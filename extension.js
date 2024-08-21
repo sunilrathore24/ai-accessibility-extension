@@ -5,6 +5,7 @@ const {
 } = require("./ai-accessibility-api.js");
 const processedDocuments = new Set();
 let animationInterval;
+let currentRequest = null;
 
 function activate(context) {
   console.log("inside extension activate method");
@@ -20,12 +21,18 @@ function activate(context) {
       return;
     }
 
+    if (currentRequest) {
+      currentRequest.abort();
+      stopLoadingAnimation();
+    }
+    currentRequest = new AbortController();
+
     const text = document.getText();
 
     try {
       startLoadingAnimation();
 
-      const suggestions = await provideAccessibilitySuggestions(text);
+      const suggestions = await provideAccessibilitySuggestions(text, currentRequest.signal);
 
       // Process the document with Cheerio
       const $ = cheerio.load(
@@ -53,6 +60,11 @@ function activate(context) {
       //   cheerioHtml
       // );
       // await vscode.workspace.applyEdit(edit);
+
+      // when user close the file before ai response
+      if(!suggestions){
+        return null;
+      }
 
       const diagnostics = suggestions
         .flatMap((suggestion) => {
@@ -87,10 +99,14 @@ function activate(context) {
                   value: suggestion.fix,
                   target: vscode.Uri.parse(
                     `command:accessibility.applyFix?${encodeURIComponent(
-                      JSON.stringify(suggestion)
+                      JSON.stringify({
+                        ...suggestion,
+                        fix: edit.newText,
+                      })
                     )}`
                   ),
                 };
+                
                 return diagnostic;
               }
               return null;
@@ -109,10 +125,15 @@ function activate(context) {
       );
     } finally {
       stopLoadingAnimation();
+      currentRequest = null;
     }
   }
 
   function startLoadingAnimation() {
+    if(animationInterval){
+      clearInterval(animationInterval);
+    }
+
     let dots = "";
     let count = 0;
 
@@ -218,11 +239,28 @@ function activate(context) {
   );
 
   vscode.workspace.onDidOpenTextDocument((document) => {
-    checkAccessibility(document);
-  });
+    if (document.languageId === "html") {
+      if (currentRequest) {
+        currentRequest.abort();
+        stopLoadingAnimation();
+      }
+      setTimeout(() => {
+        checkAccessibility(document);
+      }, 100);  
+    }
+  })
 
   vscode.workspace.onDidCloseTextDocument((document) => {
+   try {
+    if (currentRequest) {
+      currentRequest.abort();
+      stopLoadingAnimation();
+    }
     processedDocuments.delete(document.uri.toString());
+    diagnosticCollection.delete(document.uri);
+  } catch(error){
+    console.log('error in closing document ' + error);
+  }
   });
 
   // vscode.workspace.onDidChangeTextDocument((event) => {

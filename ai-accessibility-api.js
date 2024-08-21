@@ -83,6 +83,7 @@ const Promptmessage = [
           ]
             Remember to provide suggession in exactly same JSON format as shown above and there should not be a single entry with distorted format in the response.
             The JSON soould not have any unterminated commas, brackets, or quotes in the response and it should be always valid JSON.
+            the JSON should not be broken at last and you sould complete the JSON before providing the response.
             Remember to stay focused on providing accurate and helpful accessibility suggestions based on the given HTML code and guidelines.`,
   },
   {
@@ -106,10 +107,17 @@ async function checkAccessibility(html, signal) {
     console.log("inside checkAccessibility method with cody");
 
     const finalPrompt = ` 
-    please go through this html file and provide sugestions, 
-    make sure that the json will always be valid and complete,
-    remember that do not add any other text in response apart from json like 'here are suggestions' or 'here is the json'
-    file since it will be used directly in code. 
+please go through this html file and provide suggestions, 
+make sure that the json will always be valid and complete,
+remember there should be a single entry for selector, newText and oldText in each object in edit array, 
+json should always be valid and there should not be any unterminated commas, brackets or quotes specially while forming edit array.
+provide only valid fixes and do not provide suggestion which have newText and oldText both as same string.
+remember that do not add any other text in response apart from json like 'here are suggestions' or 'here is the json'
+file since it will be used directly in code. 
+remember if i send the response to JSON.parse(ai_suggestions) then it should be valid json always.
+if you are unsure about the validity of the JSON response, please double-check and ensure that it is well-formed and complete before sending the response.
+if you encounter any errors or issues while generating the JSON response, please provide an empty array [] as the response instead of sending an invalid or incomplete JSON.
+it is crucial that the JSON response is always valid and can be parsed without any errors.
     
      ${html}`;
 
@@ -130,7 +138,7 @@ const sendCodyPrompts = async (prompt, signal) => {
     });
 
     const messages = [...Promptmessage, { speaker: "human", text: prompt }];
-    // console.log("messages final  = " + JSON.stringify(messages));
+
     const response = await fetch(SOURCEGRAPH_API_URL, {
       agent,
       method: "POST",
